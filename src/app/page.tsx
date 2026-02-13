@@ -26,12 +26,12 @@ export default function HomePage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncMode, setSyncMode] = useState<SyncMode>(() => {
-    if (typeof window === "undefined") return "webhook";
+    if (typeof window === "undefined") return "normal";
     const savedMode = localStorage.getItem("bookmark_sync_mode");
     if (savedMode && ["normal", "time", "webhook"].includes(savedMode)) {
       return savedMode as SyncMode;
     }
-    return "webhook";
+    return "normal";
   });
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
   const [theme, setTheme] = useState<Theme>(() => {
@@ -110,7 +110,6 @@ export default function HomePage() {
       <main className="mx-auto max-w-4xl px-4 py-8">
         <Dashboard
           initialBookmarks={bookmarks}
-          userId={user.id}
           syncMode={syncMode}
           onConnectionStatusChange={handleConnectionStatusChange}
         />
