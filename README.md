@@ -1,109 +1,141 @@
-# Smart Bookmark App
+# Smart Bookmark
 
-A simple, real-time bookmark manager built with Next.js, Supabase, and Tailwind CSS.
+A real-time bookmark manager built with Next.js 16, Supabase, and Tailwind CSS v4. Save, organize, search, and sync your bookmarks across multiple browser tabs with multiple sync strategies.
 
 ## Features
 
-- **Google OAuth Login** — Sign in with your Google account (no email/password)
-- **Add Bookmarks** — Save bookmarks with a title and URL
-- **Private Bookmarks** — Each user can only see their own bookmarks
-- **Real-Time Sync** — Bookmarks update across browser tabs instantly without page refresh
-- **Delete Bookmarks** — Remove bookmarks you no longer need
+### Authentication
+- **Google OAuth** sign-in via Supabase Auth
+- Protected routes with automatic redirect to login
+- Secure session management with Supabase SSR
+
+### Bookmark Management
+- **Add bookmarks** with title, URL, and description
+- **Edit bookmarks** inline with a card-based editing UI
+- **Delete bookmarks** with confirmation dialog
+- Collapsible add-bookmark form to keep the UI clean
+
+### Search & Filtering
+- **Full-text search** across bookmark titles, URLs, and descriptions
+- **Hashtag system** — use `#hashtags` in descriptions for categorization
+- Clickable hashtag pills on each bookmark card to filter instantly
+- Collapsible hashtag filter panel with all available tags
+- Active filter indicator with one-click clear
+
+### Live Mode
+- **Go Live** opens a dedicated live window (popup) for side-by-side viewing
+- Live window state syncs across tabs via `localStorage` and `StorageEvent`
+- Live status indicator with animated pulse
+- Close live window from either the main tab or the live window itself
+- Automatic cleanup when the live window is closed
+
+### Sync Modes
+Three selectable sync strategies accessible from the header dropdown:
+
+| Mode | How It Works | Trade-offs |
+|------|-------------|------------|
+| **Normal (Tab Shift)** | Fetches bookmarks when the tab gains focus or becomes visible | Low battery usage, minimal API calls |
+| **Time-Based (3s)** | Polls the API every 3 seconds for updates | Consistent updates, higher battery usage |
+| **Webhook Live** *(Coming Soon)* | Real-time updates via Supabase Realtime channels and broadcast | Instant sync, currently under development |
+
+- Sync mode persists across sessions via `localStorage`
+- Connection status indicator (connected / connecting / disconnected) with color-coded icons
+- Info popup explaining each mode with details
+
+### Dark Mode / Light Mode
+- Toggle between dark and light themes via a header button (Moon/Sun icons)
+- Theme persists across sessions via `localStorage`
+- Flash-free loading with an inline script that applies the theme before hydration
+- Smooth CSS transitions between themes
+- Full dark mode support across all components — header, cards, forms, filters, popups
+
+### Webhook Debug Console
+- Built-in debug panel when Webhook mode is active
+- Timestamped log entries for all sync events (INSERT, UPDATE, DELETE)
+- Broadcast event tracking
+- Connection status changes logged in real-time
+- Clearable log history
+
+### UI / UX
+- Responsive grid layout (1 / 2 / 3 columns based on screen size)
+- Expandable bookmark descriptions with "Show more / Show less"
+- Card-based design with hover shadows and smooth transitions
+- Styled select dropdowns with custom chevron icon
+- Toast notifications for all CRUD operations and filter actions
+- Sticky header with all controls accessible at a glance
 
 ## Tech Stack
 
-- **Next.js 15** (App Router, Server Actions)
-- **Supabase** (Auth, PostgreSQL Database, Realtime)
-- **Tailwind CSS** (Styling)
-- **Vercel** (Deployment)
+| Layer | Technology |
+|-------|-----------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router) |
+| Language | TypeScript |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| Auth & Database | [Supabase](https://supabase.com/) (Auth, PostgreSQL, Realtime) |
+| Icons | [Lucide React](https://lucide.dev/) |
+| Notifications | [React Hot Toast](https://react-hot-toast.com/) |
+| Runtime | React 19 |
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── auth/signout/route.ts   # Sign-out API endpoint
+│   │   └── bookmarks/route.ts      # Bookmarks CRUD API (GET, POST, PATCH, DELETE)
+│   ├── auth/callback/route.ts      # OAuth callback handler
+│   ├── login/page.tsx              # Google OAuth login page
+│   ├── page.tsx                    # Main app page (auth check, state management)
+│   ├── layout.tsx                  # Root layout with dark mode script
+│   └── globals.css                 # Tailwind config, dark mode variables, select styles
+├── components/
+│   ├── Header.tsx                  # App header (sync mode, live mode, theme toggle, sign out)
+│   ├── Dashboard.tsx               # Bookmark grid, search, filters, CRUD operations
+│   └── BookmarkForm.tsx            # Bookmark form component
+└── lib/
+    └── supabase/
+        ├── client.ts               # Supabase browser client
+        └── server.ts               # Supabase server client
+```
 
 ## Getting Started
 
 ### Prerequisites
-
 - Node.js 18+
-- A Supabase project
-- Google OAuth credentials (Client ID & Secret)
+- A [Supabase](https://supabase.com/) project with:
+  - Google OAuth provider configured
+  - A `bookmarks` table with columns: `id`, `url`, `title`, `description`, `created_at`, `user_id`
+  - Realtime enabled on the `bookmarks` table (for Webhook mode)
 
-### 1. Clone and Install
+### Installation
 
 ```bash
-git clone <your-repo-url>
+git clone [<repository-url>](https://github.com/RAJASHEKARGUNAGANTI/RAJASHEKARGUNAGANTI-Abstrabit.smart-bookmark-app.git)
 cd smart-bookmark-app
 npm install
 ```
 
-### 2. Set Up Supabase
-
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to **Authentication → Providers → Google** and enter your Google Client ID and Client Secret
-3. Copy the Supabase callback URL and add it to your Google Cloud Console's **Authorized Redirect URIs**
-4. Run this SQL in the **SQL Editor** to create the bookmarks table:
-
-```sql
-CREATE TABLE bookmarks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  url TEXT NOT NULL,
-  title TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
-);
-
-ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own bookmarks"
-  ON bookmarks FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own bookmarks"
-  ON bookmarks FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own bookmarks"
-  ON bookmarks FOR DELETE
-  USING (auth.uid() = user_id);
-```
-
-5. Enable **Realtime** for the `bookmarks` table: Database → Replication → Enable for `bookmarks`
-
-### 3. Configure Environment Variables
+### Environment Variables
 
 Create a `.env.local` file:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 4. Run Locally
+### Development
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deployment (Vercel)
+### Production Build
 
-1. Push to GitHub
-2. Import the repo in [Vercel](https://vercel.com)
-3. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables
-4. Deploy
-5. **Important:** Update these settings with your Vercel domain:
-   - Google Cloud Console → Authorized Redirect URIs: add `https://<your-app>.vercel.app/auth/callback`
-   - Supabase → Authentication → URL Configuration → Site URL: set to your Vercel domain
-
-## Environment Variables
-
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anonymous/public key |
-
-## Problems Encountered & Solutions
-
-*Document any issues you face during setup and deployment here.*
-
-## Live URL
-
-*Add your Vercel deployment URL here after deploying.*
+```bash
+npm run build
+npm start
+```

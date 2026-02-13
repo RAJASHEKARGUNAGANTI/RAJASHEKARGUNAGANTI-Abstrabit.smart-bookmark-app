@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
+  --background: #f9fafb;
   --foreground: #171717;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,15 +19,22 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Styled select options */
+select option {
+  padding: 12px 16px;
+  background-color: white;
+  color: #374151;
+  border-radius: 8px;
+}
+
+.dark select option {
+  background-color: #1e293b;
+  color: #e2e8f0;
 }

@@ -3,27 +3,41 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 
 type SyncMode = "normal" | "time" | "webhook";
 type ConnectionStatus = "connected" | "disconnected" | "connecting";
+type Theme = "light" | "dark";
+
+type Bookmark = {
+  id: string;
+  url: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  user_id: string;
+};
 
 export default function HomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncMode, setSyncMode] = useState<SyncMode>("webhook");
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
-
-  useEffect(() => {
-    // Load saved sync mode from localStorage
+  const [syncMode, setSyncMode] = useState<SyncMode>(() => {
+    if (typeof window === "undefined") return "webhook";
     const savedMode = localStorage.getItem("bookmark_sync_mode");
     if (savedMode && ["normal", "time", "webhook"].includes(savedMode)) {
-      setSyncMode(savedMode as SyncMode);
+      return savedMode as SyncMode;
     }
-  }, []);
+    return "webhook";
+  });
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "light";
+    return (localStorage.getItem("bookmark_theme") as Theme) || "light";
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,10 +74,21 @@ export default function HomePage() {
     setConnectionStatus(status);
   };
 
+  const handleThemeToggle = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("bookmark_theme", newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center transition-colors">
+        <div className="text-lg text-gray-600 dark:text-gray-300">Loading...</div>
       </div>
     );
   }
@@ -73,12 +98,14 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors">
       <Header
         userEmail={user.email ?? ""}
         syncMode={syncMode}
         onSyncModeChange={handleSyncModeChange}
         connectionStatus={connectionStatus}
+        theme={theme}
+        onThemeToggle={handleThemeToggle}
       />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <Dashboard
