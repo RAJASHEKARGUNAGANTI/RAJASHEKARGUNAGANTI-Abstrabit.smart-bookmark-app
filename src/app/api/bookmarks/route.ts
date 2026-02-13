@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { url, title } = await request.json();
+  const { url, title, description } = await request.json();
 
   if (!url || !title) {
     return NextResponse.json(
@@ -45,7 +45,12 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("bookmarks")
-    .insert({ user_id: user.id, url, title })
+    .insert({ 
+      user_id: user.id, 
+      url, 
+      title,
+      description: description || null
+    })
     .select()
     .single();
 
@@ -67,7 +72,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { id, url, title } = await request.json();
+  const { id, url, title, description } = await request.json();
 
   if (!id || !url || !title) {
     return NextResponse.json(
@@ -76,7 +81,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  console.log("PATCH Request:", { id, url, title, userId: user.id });
+  console.log("PATCH Request:", { id, url, title, description, userId: user.id });
 
   // First, check if bookmark exists
   const { data: checkData, error: checkError } = await supabase
@@ -89,7 +94,11 @@ export async function PATCH(request: Request) {
   // Now try to update
   const { data, error, count } = await supabase
     .from("bookmarks")
-    .update({ url, title })
+    .update({ 
+      url, 
+      title,
+      description: description || null
+    })
     .eq("id", id)
     .eq("user_id", user.id)
     .select();

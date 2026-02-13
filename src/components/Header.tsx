@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Radio, LogOut, X, Wifi, WifiOff, Clock, Eye, Zap } from "lucide-react";
-
+import { Radio, LogOut, X, Wifi, WifiOff, ChevronDown, Clock, Repeat, Webhook, Eye, Zap } from "lucide-react";
+import {  } from "lucide-react";
 type SyncMode = "normal" | "time" | "webhook";
 type ConnectionStatus = "connected" | "disconnected" | "connecting";
 
@@ -164,7 +164,8 @@ export default function Header({
           <div className="relative">
             <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm hover:border-gray-400 transition-colors">
               {getModeIcon(syncMode)}
-              <select
+              <select 
+                title="types"
                 value={syncMode}
                 onChange={(e) => onSyncModeChange(e.target.value as SyncMode)}
                 className="appearance-none bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer pr-7"
